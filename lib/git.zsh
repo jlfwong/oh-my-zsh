@@ -6,28 +6,28 @@ function git_prompt_info() {
 }
 
 
-# Checks if working tree is dirty
-parse_git_dirty() {
-  local SUBMODULE_SYNTAX=''
-  local GIT_STATUS=''
-  local CLEAN_MESSAGE='nothing to commit (working directory clean)'
-  if [[ "$(git config --get oh-my-zsh.hide-status)" != "1" ]]; then
-    if [[ $POST_1_7_2_GIT -gt 0 ]]; then
-          SUBMODULE_SYNTAX="--ignore-submodules=dirty"
-    fi
-    if [[ "$DISABLE_UNTRACKED_FILES_DIRTY" != "true" ]]; then
-        GIT_STATUS=$(git status -s ${SUBMODULE_SYNTAX} 2> /dev/null | tail -n1)
-    else
-        GIT_STATUS=$(git status -s ${SUBMODULE_SYNTAX} -uno 2> /dev/null | tail -n1)
-    fi
-    if [[ -n $(git status -s ${SUBMODULE_SYNTAX} -uno  2> /dev/null) ]]; then
-      echo "$ZSH_THEME_GIT_PROMPT_DIRTY"
-    else
-      echo "$ZSH_THEME_GIT_PROMPT_CLEAN"
-    fi
-  else
-    echo "$ZSH_THEME_GIT_PROMPT_CLEAN"
+# Based on https://github.com/sjl/oh-my-zsh/blob/master/lib/git.zsh
+parse_git_dirty () {
+  gitstat=$(git status 2>/dev/null | grep '\(# Untracked\|# Changes\|# Changed but not updated:\)')
+  DIRTY_STATUS=""
+
+  if [[ $(echo ${gitstat} | grep -c "^# Changes to be committed:$") > 0 ]]; then
+    DIRTY_STATUS="${DIRTY_STATUS}${ZSH_THEME_GIT_PROMPT_DIRTY}"
   fi
+
+  if [[ $(echo ${gitstat} | grep -c "^\(# Untracked files:\|# Changed but not updated:\|# Changes not staged for commit:\)$") > 0 ]]; then
+    DIRTY_STATUS="${DIRTY_STATUS}${ZSH_THEME_GIT_PROMPT_UNTRACKED}"
+  fi
+
+  if [[ $(echo ${gitstat} | grep -v '^$' | wc -l | tr -d ' ') == 0 ]]; then
+    DIRTY_STATUS="${DIRTY_STATUS}${ZSH_THEME_GIT_PROMPT_CLEAN}"
+  fi
+
+  if [[ -n ${DIRTY_STATUS} ]]; then
+    DIRTY_STATUS=" ${DIRTY_STATUS}"
+  fi
+
+  echo -n ${DIRTY_STATUS}
 }
 
 # get the difference between the local and remote branches
